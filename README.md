@@ -1,6 +1,5 @@
-# Getting Started with Create React App
-
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Spanimate
+Experimental editing/animation code sketching app build off p5.js
 
 ## Available Scripts
 
