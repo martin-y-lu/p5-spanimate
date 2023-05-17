@@ -1,10 +1,13 @@
 import { Vector2, fixVec2 } from "../sketch/runtime"
+import p5 from "p5";
 
 export type Indexor = string | number 
 export enum EditorDataType{
     ANY=  "any",
     NUMBER= "number",
     VECTOR2= "Vector2",
+    COLOR= "Color",
+    TOGGLE= "Toggle",
 }
 export const editorDataTypeInfo : {[key :string] : {prettyName:string}} = {
     [EditorDataType.ANY]:{
@@ -16,8 +19,14 @@ export const editorDataTypeInfo : {[key :string] : {prettyName:string}} = {
     [EditorDataType.NUMBER]:{
         prettyName: "Number"
     },
+    [EditorDataType.COLOR ]:{
+        prettyName: "Color",
+    },
+    [EditorDataType.TOGGLE ]:{
+        prettyName: "Toggle",
+    }
 }
-export type EditorDataValueInfo= EditorDataValueAny| EditorDataValueNumber | EditorDataValueVector2; 
+export type EditorDataValueInfo= EditorDataValueAny| EditorDataValueNumber | EditorDataValueVector2 | EditorDataValueColor | EditorDataValueToggle; 
 
 export type EditorDataValueAny = {
     type: EditorDataType.ANY,
@@ -36,6 +45,17 @@ export type EditorDataValueVector2 = {
     editOrigin: Vector2,
     editScale: number,
 }
+export type ColorData = { r: number, g: number, b:number, a:number }
+
+export type EditorDataValueColor = {
+    type: EditorDataType.COLOR,
+    value: ColorData, 
+}
+export type EditorDataValueToggle = {
+    type: EditorDataType.TOGGLE,
+    value: boolean, 
+}
+
 export function copyEditorValueInfo(evi: EditorDataValueInfo): EditorDataValueInfo{
     //do something better here
     const copy = JSON.parse(JSON.stringify(evi)) as EditorDataValueInfo
@@ -43,23 +63,38 @@ export function copyEditorValueInfo(evi: EditorDataValueInfo): EditorDataValueIn
     return copy
 }
 
-
+// Used in editor state to fix data
 function cleanValue(entry: EditorDataValueInfo| undefined):any{
     if(!entry) return null;
     // console.log("cleaning value",entry,entry.value)
     if(entry.type === EditorDataType.VECTOR2){
-        let fixed = fixVec2(entry.value)
-        if(fixed){
-            entry.value = fixed;
-        }
+      let fixed = fixVec2(entry.value)
+      if(fixed){
+        entry.value = fixed;
+      }
     } 
     return entry.value
 }
+
+// 
+
 export type EditorDataEntry = {data?: EditorData, valueInfo?:EditorDataValueInfo}
+
+// Used when emitting to sketch
+function yieldValue(entry: EditorDataEntry, sketch: p5) : any{
+  if(!(entry?.valueInfo)) return null
+  if(entry.valueInfo.type === EditorDataType.COLOR){
+    let col = entry.valueInfo.value;
+    return sketch.color(col.r,col.g,col.b,col.a)
+  }
+  return cleanValue(entry.valueInfo);
+}
 
 export type EditorData = {
   [key : Indexor]: EditorDataEntry
 }
+
+// used in importing editor data
 export function cleanEditorData(ed:EditorData):EditorData{
     console.log("Cleaning ED",ed)
     for(let key of Object.keys(ed)){
@@ -78,6 +113,7 @@ export function cleanEditorData(ed:EditorData):EditorData{
 export type EditorStateInterface = {
   val: ()=> any;
   get: (...key: Indexor[]) => any;
+  from: (...key: Indexor[]) => EditorStateInterface | null;
   count: (...key: Indexor[]) => number;
   push: (key: Indexor) => void;
   pop: () => void;
@@ -93,6 +129,7 @@ export class EditorState{
   constructor(data?:EditorData){
     if(data){
       this.data = {data};
+      this.resetStack();
     }
   }
   resetStack(){
@@ -137,14 +174,13 @@ export class EditorState{
       this.context.pop();
     }
   }
-  makeSketchInterface(): EditorStateInterface{
+  makeSketchInterface(sketch:p5): EditorStateInterface{
     const self = this;
     return {
       val: ()=> {
         const current = self.current();
-        const cv = cleanValue(current?.valueInfo);
-        // console.log("VAL CURRENT",current,cv)
-        return cv;
+        if(!current) return null;
+        return yieldValue(current,sketch)
       },
       get: (...keys) =>{
         // return self.getCurrentValue(keys[0])
@@ -158,7 +194,22 @@ export class EditorState{
           if(! dat) return null;
         }
         let key = keys[keys.length-1];
-        return cleanValue(dat?.[key]?.valueInfo) ?? null
+        return yieldValue(dat?.[key],sketch) ?? null
+      },
+      from: (...keys) =>{
+        // return self.getCurrentValue(keys[0])
+        if( keys.length === 0 ) return null;
+        let dat = self.current()?.data ?? null; 
+        if(!dat) return null;
+        for(let i =0; i<keys.length;i++){
+          let key = keys[i];
+          const new_dat : EditorData | null =  dat?.[key]?.data  ?? null;
+          dat = new_dat
+          if(! dat) return null;
+        }
+        // console.log("FromDat",dat)
+
+        return new EditorState(dat).makeSketchInterface(sketch);
       },
       count: (...keys) =>{
         // return self.getCurrentValue(keys[0])

@@ -25,7 +25,7 @@ export class Vector2 extends p5.Vector{
     };
 
     prettyString(): string {
-        return `<${this.x.toFixed(6)}, ${this.y.toFixed(6)}>`
+        return `<${this.x.toFixed(5)}, ${this.y.toFixed(5)}>`
     }
 
     static add(v1: p5.Vector, v2: p5.Vector, target?: p5.Vector): Vector2{
@@ -38,6 +38,7 @@ export class Vector2 extends p5.Vector{
         return result;
     }
 }
+
 function vec2(x:number,y:number): Vector2{
     return new Vector2(x,y)
 }

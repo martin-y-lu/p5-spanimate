@@ -13,10 +13,9 @@ import { EvalResult, Vector2, evalScript, getErrorMessage } from './sketch/runti
 
 /**
  *  Todo:
- *  1) Editor state system
- *    - 
- *  2) Editor state widgets
- *  3) Animation curves + widgets
+ *  1) Editor state system DONE
+ *  2) Editor state widgets DONE
+ *  3) Animation curves + widgets 
  */
 
 
@@ -124,7 +123,7 @@ function App() {
           let tappedSketch = (p:p5)=>{
            
             // console.log('currentEState',eState.current)
-            let interf = eState.current.makeSketchInterface();
+            let interf = eState.current.makeSketchInterface(p);
 
              // let oldLog = console.log
             //  console.log = function (message) {
