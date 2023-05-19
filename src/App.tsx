@@ -24,7 +24,11 @@ type LogEntry = {
   log: string,
 } 
 
-
+enum RecordingStatus {
+  WAITING = "waiting",
+  RECORDING = "recoring",
+  LOADING = "loading",
+}
 
 const startCode = testSketch;
 function App() {
@@ -34,6 +38,18 @@ function App() {
   let [pSketch,setPSketch] = useState<p5|null>(null);
   
   let [errorMessage,setErrorMessage] = useState<string|null>(null);
+  let [recordingStatus,setRecordingStatus] = useState<RecordingStatus>(RecordingStatus.WAITING)
+  let chunks = useRef<Blob[]>([])
+  let recorder = useRef<MediaRecorder|null>(null)
+  let [recordingURL,_setRecordingURL] = useState<string|null>(null)
+  function setRecordingUrl(newUrl:string){
+    if(recordingURL != null){
+      URL.revokeObjectURL(recordingURL);
+    }
+    _setRecordingURL(newUrl);
+  }
+
+
   let logEntries = useRef<LogEntry[]>([{err:false,log:"Test Log"},{err:true,log:"Test Err"}]);
   let eState = useRef<EditorState>(
     new EditorState({
@@ -230,6 +246,42 @@ function App() {
       <DragWindow defaultPosition={{x:800,y:600}} header={{title:"Editor"}}>
           {/* <EditorStateDisplay editorData={eState.current.data}/> */}
           <EditorDisplayEntry editorData={{root:eState.current.data}} ind='root' depth={0}/>
+      </DragWindow>
+
+      <DragWindow defaultPosition={{x:1600,y:100}} header={{title:"Recording"}}>
+        { pSketch && <Button text={ recordingStatus} onClick={ async ()=>{
+            if(recordingStatus === RecordingStatus.WAITING){
+             await (async ()=>{
+                if(! pSketch) return;
+                let canvas = canvasParentRef.current?.firstChild;
+                if( !(canvas instanceof HTMLCanvasElement) ) {console.log("not a canvas"); return;}
+                let stream = canvas.captureStream(30), 
+                rec = new MediaRecorder(stream);
+                rec.ondataavailable = e => {
+                  if (e.data.size) {
+                    chunks.current.push(e.data)
+                  }
+                };
+                recorder.current = rec;
+                setRecordingStatus(RecordingStatus.RECORDING)
+                await new Promise((resolve, reject) => {
+                  rec.onstop = resolve
+                  rec.onerror = reject;
+                });
+                setRecordingStatus(RecordingStatus.LOADING)
+
+              })()
+            }
+            if(recordingStatus === RecordingStatus.RECORDING){
+              if(! recorder.current) return
+              recorder.current.stop();
+              console.log("Stopping rec")
+            }
+
+        }}/>
+
+        }
+          {recordingURL && <video controls={true} src = {recordingURL}/>}
       </DragWindow>
     </div>
   );

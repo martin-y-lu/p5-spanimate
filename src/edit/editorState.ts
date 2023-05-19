@@ -1,5 +1,6 @@
 import { Vector2, fixVec2 } from "../sketch/runtime"
 import p5 from "p5";
+import { EditorShape, EditorShapeRect, yieldShapeDrawer } from "./shape/types";
 
 export type Indexor = string | number 
 export enum EditorDataType{
@@ -8,6 +9,7 @@ export enum EditorDataType{
     VECTOR2= "Vector2",
     COLOR= "Color",
     TOGGLE= "Toggle",
+    SHAPE= "Shape"
 }
 export const editorDataTypeInfo : {[key :string] : {prettyName:string}} = {
     [EditorDataType.ANY]:{
@@ -24,9 +26,12 @@ export const editorDataTypeInfo : {[key :string] : {prettyName:string}} = {
     },
     [EditorDataType.TOGGLE ]:{
         prettyName: "Toggle",
-    }
+    },
+    [EditorDataType.SHAPE ]:{
+        prettyName: "Shape",
+    },
 }
-export type EditorDataValueInfo= EditorDataValueAny| EditorDataValueNumber | EditorDataValueVector2 | EditorDataValueColor | EditorDataValueToggle; 
+export type EditorDataValueInfo= EditorDataValueAny| EditorDataValueNumber | EditorDataValueVector2 | EditorDataValueColor | EditorDataValueToggle | EditorDataValueShape; 
 
 export type EditorDataValueAny = {
     type: EditorDataType.ANY,
@@ -55,6 +60,17 @@ export type EditorDataValueToggle = {
     type: EditorDataType.TOGGLE,
     value: boolean, 
 }
+export type EditorShapeWidgetState = {
+  showMouse: boolean,
+}
+export type EditorDataValueShape = {
+    type: EditorDataType.SHAPE,
+    value: EditorShape,
+    widget: EditorShapeWidgetState,
+    editOrigin: Vector2,
+    editScale: number,
+    editSize: number,
+}
 
 export function copyEditorValueInfo(evi: EditorDataValueInfo): EditorDataValueInfo{
     //do something better here
@@ -73,6 +89,9 @@ function cleanValue(entry: EditorDataValueInfo| undefined):any{
         entry.value = fixed;
       }
     } 
+    if(entry.type === EditorDataType.SHAPE){
+      return null;
+    }
     return entry.value
 }
 
@@ -80,12 +99,18 @@ function cleanValue(entry: EditorDataValueInfo| undefined):any{
 
 export type EditorDataEntry = {data?: EditorData, valueInfo?:EditorDataValueInfo}
 
+export function makeSketchColor(col:ColorData,s:p5): p5.Color{
+  return s.color(col.r,col.g,col.b,col.a)
+}
 // Used when emitting to sketch
 function yieldValue(entry: EditorDataEntry, sketch: p5) : any{
   if(!(entry?.valueInfo)) return null
   if(entry.valueInfo.type === EditorDataType.COLOR){
     let col = entry.valueInfo.value;
     return sketch.color(col.r,col.g,col.b,col.a)
+  }
+  if(entry.valueInfo.type === EditorDataType.SHAPE){
+    return yieldShapeDrawer(entry.valueInfo.value,entry.valueInfo.widget,sketch);
   }
   return cleanValue(entry.valueInfo);
 }
@@ -229,3 +254,5 @@ export class EditorState{
 
   }
 }
+
+
