@@ -1,6 +1,6 @@
 import p5 from "p5";
 import { Vector2 } from "../../sketch/runtime";
-import { ColorData, EditorShapeWidgetState, makeSketchColor } from "../editorState";
+import { ColorData, EditorShapeWidgetState, makeSketchColor, scaleAlpha } from "../editorState";
 
 export enum EditorShapeType{
     RECT= "rect",
@@ -18,23 +18,27 @@ export type EditorShapeRect = {
     fill?: ColorData,
     stroke?:{color: ColorData,weight: number},
 }
-type Drawer={
-    draw: ()=> void;
+export type DrawSpec = {
+    alpha?: number,
+}
+export type Drawer={
+    draw: (spec ?: DrawSpec)=> void;
 }
 
 export function yieldShapeDrawer(value: EditorShapeRect, widget: EditorShapeWidgetState, s: p5): Drawer {
     switch(value.type){
         case EditorShapeType.RECT : {
             return {
-                draw: ()=>{
+                draw: (spec)=>{
+                    const alpha = spec?.alpha ?? 255;
                     // console.log("Drawing")
                     if(value.fill){
-                        s.fill(makeSketchColor(value.fill,s))
+                        s.fill(makeSketchColor(scaleAlpha(value.fill,alpha),s))
                     }else{
                         s.noFill();
                     }
                     if(value.stroke){
-                        s.stroke(makeSketchColor(value.stroke.color,s))
+                        s.stroke(makeSketchColor(scaleAlpha(value.stroke.color,alpha),s))
                         s.strokeWeight(value.stroke.weight);
                     }else{
                         s.noStroke();

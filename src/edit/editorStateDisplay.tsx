@@ -46,7 +46,7 @@ function EditorValueDisplay(props:{data:EditorDataEntry}){
         </div>
     }
     if( data.valueInfo.type == EditorDataType.SHAPE){
-        return <div> Shape: { editorShapeTypeInfo[data.valueInfo.value.type].prettyName}</div>
+        return <div> Shapes:</div>
     }
     let textDisplay = "";
     if(typeof data.valueInfo?.value === "object" && "prettyString" in data.valueInfo?.value){

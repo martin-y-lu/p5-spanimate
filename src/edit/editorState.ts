@@ -1,6 +1,6 @@
 import { Vector2, fixVec2 } from "../sketch/runtime"
 import p5 from "p5";
-import { EditorShape, EditorShapeRect, yieldShapeDrawer } from "./shape/types";
+import { Drawer, EditorShape, EditorShapeRect, yieldShapeDrawer } from "./shape/types";
 
 export type Indexor = string | number 
 export enum EditorDataType{
@@ -51,6 +51,9 @@ export type EditorDataValueVector2 = {
     editScale: number,
 }
 export type ColorData = { r: number, g: number, b:number, a:number }
+export function scaleAlpha(color:ColorData, alpha: number): ColorData {
+  return {r: color.r, g: color.g, b: color.b, a : color.a * alpha/255}
+}
 
 export type EditorDataValueColor = {
     type: EditorDataType.COLOR,
@@ -63,9 +66,11 @@ export type EditorDataValueToggle = {
 export type EditorShapeWidgetState = {
   showMouse: boolean,
 }
+export type EditorShapesEntry = {shape:EditorShape,z:number};
+export type EditorShapes = {[key: Indexor]: EditorShapesEntry}
 export type EditorDataValueShape = {
     type: EditorDataType.SHAPE,
-    value: EditorShape,
+    value: EditorShapes,
     widget: EditorShapeWidgetState,
     editOrigin: Vector2,
     editScale: number,
@@ -110,7 +115,16 @@ function yieldValue(entry: EditorDataEntry, sketch: p5) : any{
     return sketch.color(col.r,col.g,col.b,col.a)
   }
   if(entry.valueInfo.type === EditorDataType.SHAPE){
-    return yieldShapeDrawer(entry.valueInfo.value,entry.valueInfo.widget,sketch);
+    const widgets = entry.valueInfo.widget;
+    const shapes = Object.values(entry.valueInfo.value).sort((a,b)=>a.z-b.z);
+    const drawers = shapes.map(shape=> yieldShapeDrawer(shape.shape,widgets,sketch))
+    return {
+      draw: (spec)=>{
+        for(let drawer of drawers ){
+          drawer.draw(spec)
+        }
+      }
+    } as Drawer
   }
   return cleanValue(entry.valueInfo);
 }

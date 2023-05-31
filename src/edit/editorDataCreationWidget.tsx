@@ -7,7 +7,7 @@ import { text } from "stream/consumers";
 import p5 from "p5";
 import reactColor, {SketchPicker,CompactPicker} from "react-color"
 import Switch from '@mui/material/Switch';
-import { EditorShapeType, editorShapeTypeInfo } from "./shape/types";
+import { EditorShape, EditorShapeType, editorShapeTypeInfo } from "./shape/types";
 
 
 
@@ -22,6 +22,7 @@ type EditorCreationNumberData = {
     valueInput: string,
     maxInput: string, 
     minInput: string,
+    stepInput: string,
 }
 type EditorCreationVector2Data = {
     type: EditorDataType.VECTOR2,
@@ -46,9 +47,9 @@ function defaultCreationData(type:EditorDataType): EditorCreationData {
         case EditorDataType.ANY:
             return {type:type, jsonInput:""}
         case EditorDataType.NUMBER:
-            return {type:type,valueInput:"",maxInput:"",minInput:"" }
+            return {type:type,valueInput:"1",maxInput:"10",minInput:"0",stepInput:"0.001"}
         case EditorDataType.VECTOR2:
-            return {type:type, xInput:"",yInput:""}
+            return {type:type, xInput:"0",yInput:"0"}
         case EditorDataType.COLOR:
             return {type:type, colorInput:{r:255,g:255,b:255,a:255}}
         case EditorDataType.TOGGLE:
@@ -64,7 +65,9 @@ function makeFromCreationData(creationData:EditorCreationData): EditorDataValueI
             const value =  Number.parseFloat(creationData.valueInput)
             let min =  Number.parseFloat(creationData.minInput)
             let max =  Number.parseFloat(creationData.maxInput)
+            let step=  Number.parseFloat(creationData.stepInput)
             if(!(isNumberSafe(value))) return null;
+            if(!(isNumberSafe(step))) return null;
             if(!(isNumberSafe(max))){
                 max = Math.max(value,0);
             }
@@ -78,7 +81,7 @@ function makeFromCreationData(creationData:EditorCreationData): EditorDataValueI
                 value,
                 max: Math.max(min,max,value),
                 min: Math.min(min,max,value),
-                step: 0.001,
+                step: Math.max(step,0.001),
             }
         case  EditorDataType.VECTOR2:
             const x =  Number.parseFloat(creationData.xInput)
@@ -129,11 +132,11 @@ function makeFromCreationData(creationData:EditorCreationData): EditorDataValueI
             let canvSize = new Vector2(500,500);
             return {
                 type: EditorDataType.SHAPE,
-                value: {
-                    type: EditorShapeType.RECT,
-                    origin: new Vector2(0,0),
-                    extent: new Vector2(100,100),
-                    fill: {r:255,g:0,b:0,a:255},
+                value: { 
+                    rect: {
+                        shape: makeDefaultShape(EditorShapeType.RECT),
+                        z: 0,
+                    }
                 },
                 editOrigin: new Vector2(canvSize.x/2,canvSize.y/2),
                 editScale: canvSize.x/2,
@@ -237,8 +240,9 @@ function EditorDataCreationNumber(props: {data:EditorCreationNumberData,setData:
     let {data,setData} = props;
     return <>
         <input type="text" name="data" placeholder="min" autoComplete="off" className="w-1/12 pl-1 ml-3" value = {data.minInput ?? ""} onChange = {(ch)=>{setData({...data,minInput:ch.target.value})}}/>
-        <input type="text" name="data" placeholder="value" autoComplete="off" className="w-1/3 pl-1 ml-3" value = {data.valueInput ?? ""} onChange = {(ch)=>{setData({...data,valueInput:ch.target.value})}}/>
+        <input type="text" name="data" placeholder="value" autoComplete="off" className="w-3/12 pl-1 ml-3" value = {data.valueInput ?? ""} onChange = {(ch)=>{setData({...data,valueInput:ch.target.value})}}/>
         <input type="text" name="data" placeholder="max" autoComplete="off" className="w-1/12 pl-1 ml-3" value = {data.maxInput ?? ""}  onChange = {(ch)=>{setData({...data,maxInput:ch.target.value})}}/>
+        <input type="text" name="data" placeholder="step" autoComplete="off" className="w-1/12 pl-1 ml-3" value = {data.stepInput ?? ""}  onChange = {(ch)=>{setData({...data,stepInput:ch.target.value})}}/>
     </>
 }
 function EditorDataCreationVector2(props: {data:EditorCreationVector2Data,setData:Dispatch<SetStateAction<EditorCreationData>>}){
@@ -270,7 +274,7 @@ function EditorDataCreationToggle(props: {data:EditorCreationToggleData,setData:
 </>
 }
 
-let editorShapeTypeOptions :{value:EditorShapeType,label:string}[] = []
+export let editorShapeTypeOptions :{value:EditorShapeType,label:string}[] = []
 for(let type of [EditorShapeType.RECT]){
     editorShapeTypeOptions.push({
         value: type,
@@ -297,4 +301,16 @@ function isNumberSafe(num:number): boolean{
 }
 function removeTrailingWhiteSpace(str:string): string { 
     return str.trim();
+}
+
+export function makeDefaultShape(shape: EditorShapeType): EditorShape {
+    switch(shape){
+        case EditorShapeType.RECT:
+            return {
+                type: EditorShapeType.RECT,
+                origin: new Vector2(0,0),
+                extent: new Vector2(100,100),
+                fill: {r:255,g:0,b:0,a:255},
+            }
+    }
 }

@@ -16,6 +16,7 @@ import { EvalResult, Vector2, evalScript, getErrorMessage } from './sketch/runti
  *  1) Editor state system DONE
  *  2) Editor state widgets DONE
  *  3) Animation curves + widgets 
+ *    - 
  */
 
 
@@ -194,7 +195,7 @@ function App() {
   },[canvasParentRef])
   
   return (
-    <div className="">
+    <div className="overscroll-none">
       <DragWindow defaultPosition = {{x:20,y:20}} header={{title:"Spanimate"}}>
         <div className = "flex pl-3 pt-2 pb-2 space-x-2">
           <Button text = "Save scene" onClick={()=>{
@@ -210,7 +211,7 @@ function App() {
         </div>
       </DragWindow>
 
-      <DragWindow defaultPosition = {{x:20,y:100}} header={{title:"Sketch"}}>
+      <DragWindow defaultPosition = {{x:800,y:600}} header={{title:"Sketch"}}>
         <CodeMirror
           value={srcValue}
           onChange={(newVal,viewUpdate)=>{
@@ -243,9 +244,11 @@ function App() {
         </div>
       </DragWindow>
 
-      <DragWindow defaultPosition={{x:800,y:600}} header={{title:"Editor"}}>
+      <DragWindow defaultPosition={{x:20,y:100}} header={{title:"Editor"}}>
           {/* <EditorStateDisplay editorData={eState.current.data}/> */}
-          <EditorDisplayEntry editorData={{root:eState.current.data}} ind='root' depth={0}/>
+          <div className="overflow-y-scroll pr-2" style={{maxHeight:"90vh"}}>
+            <EditorDisplayEntry editorData={{root:eState.current.data}} ind='root' depth={0}/>
+          </div>
       </DragWindow>
 
       <DragWindow defaultPosition={{x:1600,y:100}} header={{title:"Recording"}}>
