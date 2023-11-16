@@ -1,6 +1,9 @@
 # Spanimate
 Experimental editing/animation code sketching app build off p5.js
 
+Demonstration:
+
+[![Watch the video](https://img.youtube.com/vi/xA8TtCeWrZY/default.jpg)](https://www.youtube.com/watch?v=xA8TtCeWrZY)
 ## Available Scripts
 
 In the project directory, you can run:
